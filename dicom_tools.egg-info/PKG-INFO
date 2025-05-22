@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: dicom_tools
+Version: 0.1.0
+Summary: A toolkit for DICOM file processing, comparison, indexing, and Posda integration.
+Author: Michael Rutherford
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Requires-Dist: pip==25.1.1
+Requires-Dist: setuptools==80.7.1
+Requires-Dist: pydicom==3.0.1
+Requires-Dist: chardet==5.2.0
+Requires-Dist: tqdm==4.67.1
+Requires-Dist: pandas==2.2.3
+Requires-Dist: requests==2.32.3
+Requires-Dist: sqlalchemy==2.0.41
+Requires-Dist: psycopg2==2.9.10
+Dynamic: author
+Dynamic: classifier
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
