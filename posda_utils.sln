@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "dicom_tools", "dicom_tools.pyproj", "{1DCFA7BD-A7C4-4238-8397-1BDC515E75B6}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "posda_utils", "posda_utils.pyproj", "{1DCFA7BD-A7C4-4238-8397-1BDC515E75B6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

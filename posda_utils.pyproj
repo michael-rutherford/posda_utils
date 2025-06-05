@@ -3,13 +3,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>1dcfa7bd-a7c4-4238-8397-1bdc515e75b6</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>scripts\example_use.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>dicom_tools</Name>
+    <Name>posda_utils</Name>
     <RootNamespace>dicom_tools</RootNamespace>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
@@ -22,25 +23,39 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dicom_tools\compare\directory_compare.py" />
-    <Compile Include="dicom_tools\compare\file_compare.py" />
-    <Compile Include="dicom_tools\compare\__init__.py" />
-    <Compile Include="dicom_tools\db\data_helper.py" />
-    <Compile Include="dicom_tools\db\__init__.py" />
-    <Compile Include="dicom_tools\io\hasher.py" />
-    <Compile Include="dicom_tools\io\indexer.py" />
-    <Compile Include="dicom_tools\io\mapping.py" />
-    <Compile Include="dicom_tools\io\reader.py" />
-    <Compile Include="dicom_tools\io\__init__.py" />
-    <Compile Include="dicom_tools\posda\api.py" />
-    <Compile Include="dicom_tools\posda\db.py" />
-    <Compile Include="dicom_tools\posda\__init__.py" />
+    <Compile Include="posda_utils\compare\directory_compare.py" />
+    <Compile Include="posda_utils\compare\file_compare.py" />
+    <Compile Include="posda_utils\compare\__init__.py" />
+    <Compile Include="posda_utils\db\data_helper.py" />
+    <Compile Include="posda_utils\db\__init__.py" />
+    <Compile Include="posda_utils\io\hasher.py" />
+    <Compile Include="posda_utils\io\indexer.py" />
+    <Compile Include="posda_utils\io\mapping.py" />
+    <Compile Include="posda_utils\io\reader.py" />
+    <Compile Include="posda_utils\io\__init__.py" />
+    <Compile Include="posda_utils\posda\api.py" />
+    <Compile Include="posda_utils\posda\db.py" />
+    <Compile Include="posda_utils\posda\__init__.py" />
     <Compile Include="scripts\example_use.py" />
     <Compile Include="setup.py" />
-    <Compile Include="dicom_tools\__initi__.py" />
+    <Compile Include="posda_utils\__initi__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include="..\..\..\..\..\ENV\work_ENV\visual_studio\dicom_tools\env\">
+    <Content Include="README.md" />
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="posda_utils\" />
+    <Folder Include="posda_utils\io\" />
+    <Folder Include="posda_utils\compare\" />
+    <Folder Include="posda_utils\common\" />
+    <Folder Include="posda_utils\db\" />
+    <Folder Include="posda_utils\posda\" />
+    <Folder Include="scripts\" />
+    <Folder Include="tests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="..\..\..\..\..\ENV\work_ENV\visual_studio\posda_utils\env\">
       <Id>env</Id>
       <Version>3.11</Version>
       <Description>env (Python 3.11 (64-bit))</Description>
@@ -49,20 +64,6 @@
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
       <Architecture>X64</Architecture>
     </Interpreter>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="README.md" />
-    <Content Include="requirements.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="dicom_tools\" />
-    <Folder Include="dicom_tools\io\" />
-    <Folder Include="dicom_tools\compare\" />
-    <Folder Include="dicom_tools\common\" />
-    <Folder Include="dicom_tools\db\" />
-    <Folder Include="dicom_tools\posda\" />
-    <Folder Include="scripts\" />
-    <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

@@ -1,12 +1,12 @@
 import json
 
-from dicom_tools.io.reader import DicomFile
-from dicom_tools.io.hasher import hash_file, hash_uid, hash_uid_list
-from dicom_tools.io.indexer import DirectoryIndexer
-from dicom_tools.compare.file_compare import DicomFileComparer
+from posda_utils.io.reader import DicomFile
+from posda_utils.io.hasher import hash_file, hash_uid, hash_uid_list
+from posda_utils.io.indexer import DirectoryIndexer
+from posda_utils.compare.file_compare import DicomFileComparer
 
-from dicom_tools.posda.api import PosdaAPI
-from dicom_tools.posda.db import PosdaDB
+from posda_utils.posda.api import PosdaAPI
+from posda_utils.posda.db import PosdaDB
 
 config_file = r'D:\Cloud\University of Arkansas for Medical Sciences\Work - General\PW\posda_pw.json'
 with open(config_file) as f:

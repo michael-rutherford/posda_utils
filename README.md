@@ -1,7 +1,7 @@
-## DICOM Tools
+## Posda Utilities
 
-A toolkit for DICOM file processing, comparison, indexing, and Posda integration.
+A toolkit for medical image file processing, comparison, indexing, and Posda integration.
 
 **Install** using:
 
-pip install git+https://github.com/michael-rutherford/dicom_tools.git
+pip install git+https://github.com/michael-rutherford/posda_utils.git

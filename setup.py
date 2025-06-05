@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="dicom_tools",
-    version="0.2.0",
-    description="A toolkit for DICOM file processing, comparison, indexing, and Posda integration.",
+    name="posda_utils",
+    version="0.2.1",
+    description="A toolkit for medical image file processing, comparison, indexing, and Posda integration.",
     author="Michael Rutherford",
     packages=find_packages(),
     include_package_data=True,
