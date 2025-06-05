@@ -3,14 +3,15 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>1dcfa7bd-a7c4-4238-8397-1bdc515e75b6</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>scripts\example_use.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>dicom_tools</Name>
-    <RootNamespace>dicom_tools</RootNamespace>
+    <Name>sykit</Name>
+    <RootNamespace>sykit</RootNamespace>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -22,25 +23,39 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="dicom_tools\compare\directory_compare.py" />
-    <Compile Include="dicom_tools\compare\file_compare.py" />
-    <Compile Include="dicom_tools\compare\__init__.py" />
-    <Compile Include="dicom_tools\db\data_helper.py" />
-    <Compile Include="dicom_tools\db\__init__.py" />
-    <Compile Include="dicom_tools\io\hasher.py" />
-    <Compile Include="dicom_tools\io\indexer.py" />
-    <Compile Include="dicom_tools\io\mapping.py" />
-    <Compile Include="dicom_tools\io\reader.py" />
-    <Compile Include="dicom_tools\io\__init__.py" />
-    <Compile Include="dicom_tools\posda\api.py" />
-    <Compile Include="dicom_tools\posda\db.py" />
-    <Compile Include="dicom_tools\posda\__init__.py" />
+    <Compile Include="sykit\compare\directory_compare.py" />
+    <Compile Include="sykit\compare\file_compare.py" />
+    <Compile Include="sykit\compare\__init__.py" />
+    <Compile Include="sykit\db\data_helper.py" />
+    <Compile Include="sykit\db\__init__.py" />
+    <Compile Include="sykit\io\hasher.py" />
+    <Compile Include="sykit\io\indexer.py" />
+    <Compile Include="sykit\io\mapping.py" />
+    <Compile Include="sykit\io\reader.py" />
+    <Compile Include="sykit\io\__init__.py" />
+    <Compile Include="sykit\posda\api.py" />
+    <Compile Include="sykit\posda\db.py" />
+    <Compile Include="sykit\posda\__init__.py" />
     <Compile Include="scripts\example_use.py" />
     <Compile Include="setup.py" />
-    <Compile Include="dicom_tools\__initi__.py" />
+    <Compile Include="sykit\__initi__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include="..\..\..\..\..\ENV\work_ENV\visual_studio\dicom_tools\env\">
+    <Content Include="README.md" />
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="sykit\" />
+    <Folder Include="sykit\io\" />
+    <Folder Include="sykit\compare\" />
+    <Folder Include="sykit\common\" />
+    <Folder Include="sykit\db\" />
+    <Folder Include="sykit\posda\" />
+    <Folder Include="scripts\" />
+    <Folder Include="tests\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="..\..\..\..\..\ENV\work_ENV\visual_studio\sykit\env\">
       <Id>env</Id>
       <Version>3.11</Version>
       <Description>env (Python 3.11 (64-bit))</Description>
@@ -49,20 +64,6 @@
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
       <Architecture>X64</Architecture>
     </Interpreter>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="README.md" />
-    <Content Include="requirements.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="dicom_tools\" />
-    <Folder Include="dicom_tools\io\" />
-    <Folder Include="dicom_tools\compare\" />
-    <Folder Include="dicom_tools\common\" />
-    <Folder Include="dicom_tools\db\" />
-    <Folder Include="dicom_tools\posda\" />
-    <Folder Include="scripts\" />
-    <Folder Include="tests\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

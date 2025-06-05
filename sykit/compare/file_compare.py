@@ -1,4 +1,4 @@
-# dicom_tools/compare/file_compare.py
+# sykit/compare/file_compare.py
 
 class DicomFileComparer:
     def __init__(self):

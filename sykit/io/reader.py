@@ -1,4 +1,4 @@
-# dicom_tools/io/reader.py
+# sykit/io/reader.py
 
 import pydicom as dcm
 import chardet

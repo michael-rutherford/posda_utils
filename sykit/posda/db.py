@@ -1,4 +1,4 @@
-# dicom_tools/posda/db.py
+# sykit/posda/db.py
 
 import pandas as pd
 import hashlib

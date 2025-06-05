@@ -1,7 +1,7 @@
-## DICOM Tools
+## Sykit Imaging Tools
 
-A toolkit for DICOM file processing, comparison, indexing, and Posda integration.
+A toolkit for medical image processing, comparison, indexing, and Posda integration.
 
 **Install** using:
 
-pip install git+https://github.com/michael-rutherford/dicom_tools.git
+pip install git+https://github.com/michael-rutherford/sykit.git

@@ -1,4 +1,4 @@
-# dicom_tools/io/indexer.py
+# sykit/io/indexer.py
 
 import os
 import math
@@ -10,8 +10,8 @@ import pandas as pd
 import concurrent.futures as futures
 from pydicom.errors import InvalidDicomError
 
-from dicom_tools.io.reader import DicomFile
-from dicom_tools.io.hasher import hash_data
+from sykit.io.reader import DicomFile
+from sykit.io.hasher import hash_data
 
 
 class DirectoryIndexer:

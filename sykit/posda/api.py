@@ -1,4 +1,4 @@
-# dicom_tools/posda/api.py
+# sykit/posda/api.py
 
 import os
 import requests as req

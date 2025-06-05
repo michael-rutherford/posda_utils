@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="dicom_tools",
+    name="sykit",
     version="0.2.0",
-    description="A toolkit for DICOM file processing, comparison, indexing, and Posda integration.",
+    description="A toolkit for medical image processing, comparison, indexing, and Posda integration.",
     author="Michael Rutherford",
     packages=find_packages(),
     include_package_data=True,
