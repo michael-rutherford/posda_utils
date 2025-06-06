@@ -51,6 +51,37 @@ class PosdaDB:
         except SQLAlchemyError as e:
             print(f"Write failed: {e}")
 
+    def create_table(self, table_name, schema="public", columns=None):
+
+        if columns is None:
+            raise ValueError("Column definitions must be provided.")
+    
+        create_query = f"""
+            CREATE TABLE IF NOT EXISTS {schema}.{table_name} (
+                {columns}
+            );
+        """
+
+        try:
+            with self.get_connection() as conn:                
+                with conn.begin():
+                    conn.execute(text(create_query))
+            print(f"Table {schema}.{table_name} created (if not exists).")
+        except SQLAlchemyError as e:
+            print(f"Error creating table {table_name}: {e}")
+
+    def truncate_table(self, table_name, schema="public"):
+
+        truncate_query = f"TRUNCATE TABLE {schema}.{table_name};"
+        
+        try:
+            with self.get_connection() as conn:
+                with conn.begin():
+                    conn.execute(text(truncate_query))
+            print(f"Table {schema}.{table_name} truncated.")
+        except SQLAlchemyError as e:
+            print(f"Error truncating table {table_name}: {e}")
+
     # Posda functions
 
     def get_recent_timepoint(self, file_id):
