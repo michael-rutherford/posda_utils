@@ -9,8 +9,6 @@ setup(
     include_package_data=True,
     python_requires=">=3.10",
     install_requires=[
-        "pip==25.1.1",
-        "setuptools==80.7.1",
         "pydicom==3.0.1",
         "chardet==5.2.0",
         "tqdm==4.67.1",
