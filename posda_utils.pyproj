@@ -38,7 +38,7 @@
     <Compile Include="posda_utils\posda\__init__.py" />
     <Compile Include="scripts\example_use.py" />
     <Compile Include="setup.py" />
-    <Compile Include="posda_utils\__initi__.py" />
+    <Compile Include="posda_utils\__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="README.md" />
