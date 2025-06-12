@@ -33,8 +33,9 @@ class PosdaAPI:
         resp, _, success = self.query_posda_api(f'/series/{series_instance_uid}')
         return resp.json() if success else None
 
-    def get_series_files(self, series_instance_uid):
-        resp, _, success = self.query_posda_api(f'/series/{series_instance_uid}/files')
+    def get_series_files(self, series_instance_uid, timepoint=None):
+        sid = f"{series_instance_uid}:{timepoint}" if timepoint else series_instance_uid
+        resp, _, success = self.query_posda_api(f'/series/{sid}/files')
         return resp.json().get('file_ids', []) if success else []
 
     def get_file_info(self, file_id):
