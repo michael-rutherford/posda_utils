@@ -67,16 +67,10 @@ class PosdaAPI:
     def download_series(self, series_instance_uid, timepoint=None, output_dir=None):
         sid = f"{series_instance_uid}:{timepoint}" if timepoint else series_instance_uid
         file_ids = self.get_series_files(sid)
-        if not file_ids:
-            print("No files found.")
-            return
 
         series_dir = os.path.join(output_dir, series_instance_uid)
-        os.makedirs(series_dir, exist_ok=True)
 
-        print(f"Downloading {len(file_ids)} files...")
-        for file_id in file_ids:
-            self.download_file(file_id, series_dir)
+        self.download_files(file_ids, series_dir, structured_path=False, max_workers=4, overwrite=False)
 
     def download_file(self, file_id, file_dir, file_name=None, overwrite=False):
 
