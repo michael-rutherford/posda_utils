@@ -74,65 +74,62 @@ class PosdaAPI:
 
         print(f"Downloading {len(file_ids)} files...")
         for file_id in file_ids:
-            file_content = self.get_file_data(file_id)
-            if file_content:
-                file_path = os.path.join(series_path, f"{file_id}.dcm")
-                with open(file_path, 'wb') as f:
-                    f.write(file_content)
+            self.download_file(file_id, series_path)
 
-    def download_file(self, file_id, output_path):
-        file_info = self.get_file_info(file_id)
-        
-        ext = None
-        if file_info:
-            match file_info['file_type']:
-                case type if type.startswith('parsed dicom file'):
-                    ext = 'dcm'
-                case type if type.startswith('Nifti Image (gzipped)'):
-                    ext = 'nii.gz'
-                case type if type.startswith('Nifti Image'):
-                    ext = 'nii'                    
-                case type if type.startswith('TIFF image data'):
-                    ext = 'tif'
-                case type if type.contains('ASCII'):
-                    ext = 'txt'
-                case type if type.startswith('PDF document'):
-                    ext = 'pdf'
-                case type if type.startswith('text/csv'):
-                    ext = 'csv'
-                case type if type.startswith('HTML document'):
-                    ext = 'html'
-                case type if type.startswith('XML  document'):
-                    ext = 'xml'
-                case type if type.startswith('JSON data'):
-                    ext = 'json'
-                case type if type.startswith('GIF image data'):
-                    ext = 'gif'
-                case type if type.startswith('JPEG image data'):
-                    ext = 'jpg'
-                case type if type.startswith('PNG image data'):
-                    ext = 'png'                    
-                case type if type.startswith('gzip compressed data'):
-                    ext = 'gz'
-                case type if type.startswith('Zip archive data'):
-                    ext = 'zip'                    
-                case type if type.startswith('Perl script'):
-                    ext = 'pl'
-                case type if type.startswith('Python script'):
-                    ext = 'py'
-                case type if type.startswith('SQLite'):
-                    ext = 'db'
-                case _:
-                    ext = None
-                    
-            if ext and not ext.startswith('.'):
-                ext = f".{ext}"
+    def download_file(self, file_id, file_path, file_name=None):
+
+        if not file_name:
+            file_name = f"{file_id}"
+            file_info = self.get_file_info(file_id)
+            ext = None
+            if file_info:
+                match file_info['file_type']:
+                    case type if type.startswith('parsed dicom file'):
+                        ext = '.dcm'
+                    case type if type.startswith('Nifti Image (gzipped)'):
+                        ext = '.nii.gz'
+                    case type if type.startswith('Nifti Image'):
+                        ext = 'nii'                    
+                    case type if type.startswith('TIFF image data'):
+                        ext = '.tif'
+                    case type if type.contains('ASCII'):
+                        ext = '.txt'
+                    case type if type.startswith('PDF document'):
+                        ext = '.pdf'
+                    case type if type.startswith('text/csv'):
+                        ext = '.csv'
+                    case type if type.startswith('HTML document'):
+                        ext = '.html'
+                    case type if type.startswith('XML  document'):
+                        ext = '.xml'
+                    case type if type.startswith('JSON data'):
+                        ext = '.json'
+                    case type if type.startswith('GIF image data'):
+                        ext = '.gif'
+                    case type if type.startswith('JPEG image data'):
+                        ext = '.jpg'
+                    case type if type.startswith('PNG image data'):
+                        ext = '.png'                    
+                    case type if type.startswith('gzip compressed data'):
+                        ext = '.gz'
+                    case type if type.startswith('Zip archive data'):
+                        ext = '.zip'                    
+                    case type if type.startswith('Perl script'):
+                        ext = '.pl'
+                    case type if type.startswith('Python script'):
+                        ext = '.py'
+                    case type if type.startswith('SQLite'):
+                        ext = '.db'
+                    case _:
+                        ext = None
+
+                file_name = f"{file_id}{ext if ext else ''}"
 
         file_content = self.get_file_data(file_id)
         if file_content:
-            os.makedirs(output_path, exist_ok=True)
-            file_path = os.path.join(output_path, f"{file_id}{ext if ext else ''}")
-            with open(file_path, 'wb') as f:
+            os.makedirs(file_path, exist_ok=True)
+            download_path = os.path.join(file_path, file_name)
+            with open(download_path, 'wb') as f:
                 f.write(file_content)
-            return file_path
+            return download_path
         return None

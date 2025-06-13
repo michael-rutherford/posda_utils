@@ -107,8 +107,10 @@ def example_posda_api():
     # dicom_details = api.get_file_details(dcm_file_id)
     # dicom_dump = api.get_dicom_dump(dcm_file_id)   
     
-    # api.download_series(series_uid, timepoint, output_path)
+    api.download_series(series_uid, timepoint, output_path)    
+
     api.download_file(dcm_file_id, output_path)
+    api.download_file(dcm_file_id, output_path, 'test_dicom.dcm')
     
     # nifti
     # nifti_info = api.get_file_info(nifti_file_id)
@@ -119,6 +121,7 @@ def example_posda_api():
     # nifti_dump = api.get_dicom_dump(nifti_file_id)
     
     api.download_file(nifti_file_id, output_path)
+    api.download_file(nifti_file_id, output_path, 'test_nifti.nii.gz')
 
 def example_posda_db():
     conn_data = {
@@ -167,8 +170,8 @@ if __name__ == "__main__":
     #example_hashing()
     #example_index_directory()
     #example_file_compare()
-    #example_posda_api()
-    example_posda_db()
+    example_posda_api()
+    #example_posda_db()
 
 
 
