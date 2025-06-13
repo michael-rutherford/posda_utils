@@ -2,6 +2,8 @@
 
 import os
 import requests as req
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 
 class PosdaAPI:
@@ -62,21 +64,21 @@ class PosdaAPI:
         resp, _, success = self.query_posda_api(f'/dump/{file_id}')
         return resp.text if success else None
 
-    def download_series(self, series_instance_uid, timepoint=None, output_path=None):
+    def download_series(self, series_instance_uid, timepoint=None, output_dir=None):
         sid = f"{series_instance_uid}:{timepoint}" if timepoint else series_instance_uid
         file_ids = self.get_series_files(sid)
         if not file_ids:
             print("No files found.")
             return
 
-        series_path = os.path.join(output_path, series_instance_uid)
-        os.makedirs(series_path, exist_ok=True)
+        series_dir = os.path.join(output_dir, series_instance_uid)
+        os.makedirs(series_dir, exist_ok=True)
 
         print(f"Downloading {len(file_ids)} files...")
         for file_id in file_ids:
-            self.download_file(file_id, series_path)
+            self.download_file(file_id, series_dir)
 
-    def download_file(self, file_id, file_path, file_name=None):
+    def download_file(self, file_id, file_dir, file_name=None):
 
         if not file_name:
             file_name = f"{file_id}"
@@ -127,9 +129,55 @@ class PosdaAPI:
 
         file_content = self.get_file_data(file_id)
         if file_content:
-            os.makedirs(file_path, exist_ok=True)
-            download_path = os.path.join(file_path, file_name)
+            os.makedirs(file_dir, exist_ok=True)
+            download_path = os.path.join(file_dir, file_name)
             with open(download_path, 'wb') as f:
                 f.write(file_content)
             return download_path
         return None
+    
+    def _download_file_thread(self, file_id, output_dir, structured_path):
+        try:
+            if structured_path:
+                file_details = self.get_file_details(file_id)
+                if not file_details:
+                    return f"{file_id}: no file details"
+            
+                patient_id = file_details.get('patient_id', 'unknown')
+                study_uid = file_details.get('study_instance_uid', 'unknown')
+                series_uid = file_details.get('series_instance_uid', 'unknown')
+                sop_uid = file_details.get('sop_instance_uid', 'unknown')
+
+                file_dir = os.path.join(output_dir, patient_id, study_uid, series_uid)
+                file_name = f"{sop_uid}.dcm"
+            else:
+                file_dir = output_dir
+                file_name = f"{file_id}.dcm"
+
+            path = self.download_file(file_id, file_dir, file_name)
+            if not path:
+                return f"{file_id}: failed to download"
+
+            return None  # success
+
+        except Exception as e:
+            return f"{file_id}: error - {e}"
+
+    def download_files(self, file_ids, output_dir, structured_path=True, max_workers=1):
+        print(f"Downloading {len(file_ids)} files using {'structured' if structured_path else 'flat'} path layout...")
+
+        errors = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(self._download_file_thread, fid, output_dir, structured_path)
+                for fid in file_ids
+            ]
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Downloading Files"):
+                result = future.result()
+                if result is not None:
+                    errors.append(result)
+
+        if errors:
+            print("\nErrors encountered:")
+            for err in errors:
+                print(f" - {err}")

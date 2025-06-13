@@ -107,7 +107,7 @@ def example_posda_api():
     # dicom_details = api.get_file_details(dcm_file_id)
     # dicom_dump = api.get_dicom_dump(dcm_file_id)   
     
-    api.download_series(series_uid, timepoint, output_path)    
+    #api.download_series(series_uid, timepoint, output_path)    
 
     api.download_file(dcm_file_id, output_path)
     api.download_file(dcm_file_id, output_path, 'test_dicom.dcm')
@@ -122,6 +122,10 @@ def example_posda_api():
     
     api.download_file(nifti_file_id, output_path)
     api.download_file(nifti_file_id, output_path, 'test_nifti.nii.gz')
+    
+    # multiple files
+    file_ids = api.get_series_files(series_uid, timepoint)
+    api.download_files(file_ids, output_path, True, 5)
 
 def example_posda_db():
     conn_data = {
