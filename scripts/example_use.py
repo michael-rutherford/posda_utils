@@ -90,42 +90,42 @@ def example_posda_api():
     api_host = config_data['tcia']['api_host']
     api_auth = config_data['tcia']['api_auth']
 
-    api = PosdaAPI(api_host, api_auth)
-    
-    # study = api.get_study(study_uid)
-    # #study_series = api.get_study_series(study_uid) - Doesn't work
-    # series = api.get_series(series_uid)
-    # series_files = api.get_series_files(f'{series_uid}:{timepoint}') # add timepoint to restrict
-    
-    output_path = r'C:\data\test\download'
+    with PosdaAPI(api_host, api_auth) as api:
 
-    # dicom
-    # dicom_info = api.get_file_info(dcm_file_id)
-    # dicom_pixels = api.get_file_pixels(dcm_file_id)
-    # dicom_data = api.get_file_data(dcm_file_id)
-    # dicom_path = api.get_file_path(dcm_file_id)
-    # dicom_details = api.get_file_details(dcm_file_id)
-    # dicom_dump = api.get_dicom_dump(dcm_file_id)   
+        # study = api.get_study(study_uid)
+        # #study_series = api.get_study_series(study_uid) - Doesn't work
+        # series = api.get_series(series_uid)
+        # series_files = api.get_series_files(f'{series_uid}:{timepoint}') # add timepoint to restrict
     
-    api.download_series(series_uid, timepoint, output_path)
+        output_path = r'C:\data\test\download'
 
-    api.download_file(dcm_file_id, output_path)
-    api.download_file(dcm_file_id, output_path, 'test_dicom.dcm')
+        # dicom
+        # dicom_info = api.get_file_info(dcm_file_id)
+        # dicom_pixels = api.get_file_pixels(dcm_file_id)
+        # dicom_data = api.get_file_data(dcm_file_id)
+        # dicom_path = api.get_file_path(dcm_file_id)
+        # dicom_details = api.get_file_details(dcm_file_id)
+        # dicom_dump = api.get_dicom_dump(dcm_file_id)   
     
-    # nifti
-    # nifti_info = api.get_file_info(nifti_file_id)
-    # nifti_pixels = api.get_file_pixels(nifti_file_id)
-    # nifti_data = api.get_file_data(nifti_file_id)
-    # nifti_path = api.get_file_path(nifti_file_id)
-    # nifti_details = api.get_file_details(nifti_file_id) # doesn't work for nifti
-    # nifti_dump = api.get_dicom_dump(nifti_file_id)
+        api.download_series(series_uid, timepoint, output_path)
+
+        api.download_file(dcm_file_id, output_path)
+        api.download_file(dcm_file_id, output_path, 'test_dicom.dcm')
     
-    api.download_file(nifti_file_id, output_path)
-    api.download_file(nifti_file_id, output_path, 'test_nifti.nii.gz')
+        # nifti
+        # nifti_info = api.get_file_info(nifti_file_id)
+        # nifti_pixels = api.get_file_pixels(nifti_file_id)
+        # nifti_data = api.get_file_data(nifti_file_id)
+        # nifti_path = api.get_file_path(nifti_file_id)
+        # nifti_details = api.get_file_details(nifti_file_id) # doesn't work for nifti
+        # nifti_dump = api.get_dicom_dump(nifti_file_id)
     
-    # # multiple files
-    # file_ids = api.get_series_files(series_uid, timepoint)
-    # api.download_files(file_ids, output_path, structured_path=True, max_workers=5, overwrite=False)
+        api.download_file(nifti_file_id, output_path)
+        api.download_file(nifti_file_id, output_path, 'test_nifti.nii.gz')
+    
+        # # multiple files
+        # file_ids = api.get_series_files(series_uid, timepoint)
+        # api.download_files(file_ids, output_path, structured_path=True, max_workers=5, overwrite=False)
 
 def example_posda_db():
     conn_data = {
@@ -135,38 +135,38 @@ def example_posda_db():
         "port": config_data['tcia']['port']
     }
 
-    db = PosdaDB(conn_data, db="posda_files")
+    with PosdaDB(conn_data, db="posda_files") as db:
 
-    # # Insert
-    # insert_sql = """
-    #     INSERT INTO public.michael_test (a, b, c)
-    #     VALUES (:a, :b, :c)
-    # """
-    # db.run_write(insert_sql,
-    #     [{"a": "hello", "b": 1, "c": True},
-    #      {"a": "there", "b": 2, "c": False},
-    #      {"a": "friend", "b": 3, "c": True}]),
+        # # Insert
+        # insert_sql = """
+        #     INSERT INTO public.michael_test (a, b, c)
+        #     VALUES (:a, :b, :c)
+        # """
+        # db.run_write(insert_sql,
+        #     [{"a": "hello", "b": 1, "c": True},
+        #      {"a": "there", "b": 2, "c": False},
+        #      {"a": "friend", "b": 3, "c": True}]),
 
-    # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
-    # print(data_dict)
+        # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
+        # print(data_dict)
 
-    # # Update
-    # update_sql = """
-    #     UPDATE public.michael_test 
-    #     SET a = :a, b = :b, c = :c 
-    #     WHERE id = :id
-    # """
-    # db.run_write(update_sql, 
-    #     [{"id": 1, "a": "see", "b": 10, "c": False},
-    #      {"id": 2, "a": "you", "b": 9, "c": True},
-    #      {"id": 3, "a": "later", "b": 8, "c": False}])
+        # # Update
+        # update_sql = """
+        #     UPDATE public.michael_test 
+        #     SET a = :a, b = :b, c = :c 
+        #     WHERE id = :id
+        # """
+        # db.run_write(update_sql, 
+        #     [{"id": 1, "a": "see", "b": 10, "c": False},
+        #      {"id": 2, "a": "you", "b": 9, "c": True},
+        #      {"id": 3, "a": "later", "b": 8, "c": False}])
 
-    # # Query
-    # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
-    # print(data_dict)
+        # # Query
+        # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
+        # print(data_dict)
     
-    # Function
-    timepoint_list = db.get_timepoint_files(3792)
+        # Function
+        timepoint_list = db.get_timepoint_files(3792)
 
 
 if __name__ == "__main__":

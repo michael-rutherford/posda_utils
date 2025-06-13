@@ -10,6 +10,13 @@ from pydicom import dcmread
 
 
 class PosdaDB:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.engine:
+            self.engine.dispose()
+    
     def __init__(self, conn_data, db):
         pydicom.config.convert_wrong_length_to_UN = True
         self.engine = create_engine(
