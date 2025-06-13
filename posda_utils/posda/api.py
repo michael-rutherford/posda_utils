@@ -78,7 +78,7 @@ class PosdaAPI:
         for file_id in file_ids:
             self.download_file(file_id, series_dir)
 
-    def download_file(self, file_id, file_dir, file_name=None):
+    def download_file(self, file_id, file_dir, file_name=None, overwrite=False):
 
         if not file_name:
             file_name = f"{file_id}"
@@ -127,16 +127,20 @@ class PosdaAPI:
 
                 file_name = f"{file_id}{ext if ext else ''}"
 
+        download_path = os.path.join(file_dir, file_name)
+
+        if not overwrite and os.path.exists(download_path):
+            return download_path
+
         file_content = self.get_file_data(file_id)
         if file_content:
             os.makedirs(file_dir, exist_ok=True)
-            download_path = os.path.join(file_dir, file_name)
             with open(download_path, 'wb') as f:
                 f.write(file_content)
             return download_path
         return None
     
-    def _download_file_thread(self, file_id, output_dir, structured_path):
+    def _download_file_thread(self, file_id, output_dir, structured_path, overwrite):
         try:
             if structured_path:
                 file_details = self.get_file_details(file_id)
@@ -154,22 +158,21 @@ class PosdaAPI:
                 file_dir = output_dir
                 file_name = f"{file_id}.dcm"
 
-            path = self.download_file(file_id, file_dir, file_name)
+            path = self.download_file(file_id, file_dir, file_name, overwrite)
             if not path:
                 return f"{file_id}: failed to download"
-
-            return None  # success
+            return None
 
         except Exception as e:
             return f"{file_id}: error - {e}"
 
-    def download_files(self, file_ids, output_dir, structured_path=True, max_workers=1):
+    def download_files(self, file_ids, output_dir, structured_path=True, max_workers=1, overwrite=False):
         print(f"Downloading {len(file_ids)} files using {'structured' if structured_path else 'flat'} path layout...")
 
         errors = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
-                executor.submit(self._download_file_thread, fid, output_dir, structured_path)
+                executor.submit(self._download_file_thread, fid, output_dir, structured_path, overwrite)
                 for fid in file_ids
             ]
             for future in tqdm(as_completed(futures), total=len(futures), desc="Downloading Files"):

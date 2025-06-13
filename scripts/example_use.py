@@ -125,7 +125,7 @@ def example_posda_api():
     
     # multiple files
     file_ids = api.get_series_files(series_uid, timepoint)
-    api.download_files(file_ids, output_path, True, 5)
+    api.download_files(file_ids, output_path, structured_path=True, max_workers=5, overwrite=False)
 
 def example_posda_db():
     conn_data = {
