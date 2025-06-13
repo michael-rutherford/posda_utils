@@ -1,20 +1,36 @@
 # posda_utils/posda/api.py
 
 import os
-import requests as req
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
 
 class PosdaAPI:
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.session.close()
+
     def __init__(self, api_url, auth_token):
         self.api_url = api_url.rstrip('/')
         self.headers = { 'Authorization': f'Bearer {auth_token}' }
+        
+        self.session = requests.Session()
+        self.session.headers.update(self.headers)
+
+        adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=Retry(total=3, backoff_factor=0.3))
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     def query_posda_api(self, endpoint):
         url = f"{self.api_url}{endpoint}"
         try:
-            resp = req.get(url, headers=self.headers)
+            resp = self.session.get(url, timeout=10)
             if resp.status_code == 200:
                 return resp, url, True
             print(f'Bad response: {resp.status_code} - {resp.text}')
