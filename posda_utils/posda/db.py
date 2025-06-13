@@ -1,4 +1,4 @@
-# dicom_tools/posda/db.py
+# posda_utils/posda/db.py
 
 import pandas as pd
 import hashlib
@@ -92,3 +92,12 @@ class PosdaDB:
         """
         result = self.run_query(query)
         return result[0][0] if result else None
+    
+    def get_timepoint_files(self, tp):
+        query = f"""
+            select atf.file_id 
+            from activity_timepoint_file atf 
+            where atf.activity_timepoint_id = {tp}
+        """
+        result = self.run_query(query)
+        return [row[0] for row in result] if result else []

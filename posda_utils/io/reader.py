@@ -1,4 +1,4 @@
-# dicom_tools/io/reader.py
+# posda_utils/io/reader.py
 
 import pydicom as dcm
 import chardet

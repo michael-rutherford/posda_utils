@@ -128,44 +128,47 @@ def example_posda_db():
         "port": config_data['tcia']['port']
     }
 
-    db = PosdaDB(conn_data, db="bb_temp")
+    db = PosdaDB(conn_data, db="posda_files")
 
-    # Insert
-    insert_sql = """
-        INSERT INTO public.michael_test (a, b, c)
-        VALUES (:a, :b, :c)
-    """
-    db.run_write(insert_sql,
-        [{"a": "hello", "b": 1, "c": True},
-         {"a": "there", "b": 2, "c": False},
-         {"a": "friend", "b": 3, "c": True}]),
+    # # Insert
+    # insert_sql = """
+    #     INSERT INTO public.michael_test (a, b, c)
+    #     VALUES (:a, :b, :c)
+    # """
+    # db.run_write(insert_sql,
+    #     [{"a": "hello", "b": 1, "c": True},
+    #      {"a": "there", "b": 2, "c": False},
+    #      {"a": "friend", "b": 3, "c": True}]),
 
-    data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
-    print(data_dict)
+    # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
+    # print(data_dict)
 
-    # Update
-    update_sql = """
-        UPDATE public.michael_test 
-        SET a = :a, b = :b, c = :c 
-        WHERE id = :id
-    """
-    db.run_write(update_sql, 
-        [{"id": 1, "a": "see", "b": 10, "c": False},
-         {"id": 2, "a": "you", "b": 9, "c": True},
-         {"id": 3, "a": "later", "b": 8, "c": False}])
+    # # Update
+    # update_sql = """
+    #     UPDATE public.michael_test 
+    #     SET a = :a, b = :b, c = :c 
+    #     WHERE id = :id
+    # """
+    # db.run_write(update_sql, 
+    #     [{"id": 1, "a": "see", "b": 10, "c": False},
+    #      {"id": 2, "a": "you", "b": 9, "c": True},
+    #      {"id": 3, "a": "later", "b": 8, "c": False}])
 
-    # Query
-    data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
-    print(data_dict)
+    # # Query
+    # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
+    # print(data_dict)
+    
+    # Function
+    timepoint_list = db.get_timepoint_files(3792)
 
 
 if __name__ == "__main__":
-    example_read_dicom()
+    #example_read_dicom()
     #example_hashing()
     #example_index_directory()
     #example_file_compare()
     #example_posda_api()
-    #example_posda_db()
+    example_posda_db()
 
 
 
