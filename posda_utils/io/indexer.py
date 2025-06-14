@@ -3,109 +3,85 @@
 import os
 import math
 import logging
-import sqlite3 as sql
 from glob import glob
 from tqdm import tqdm
-import pandas as pd
 import concurrent.futures as futures
+import pandas as pd
 from pydicom.errors import InvalidDicomError
 
 from posda_utils.io.reader import DicomFile
-from posda_utils.io.hasher import hash_data
+from posda_utils.db.models import DicomIndex
 
+logger = logging.getLogger(__name__)
 
-class DirectoryIndexer:
-    def __init__(self, retain_pixel_data=False):
-        self.retain_pixel_data = retain_pixel_data
-
-    # Index all DICOM files in a directory; return DataFrame or write to SQLite
-    def index_directory(self, directory_path, multiproc=True, cpus=4, output=None, table_name="dicom_index"):
+class DicomIndexer:
+    def index_directory(self,
+                        directory_path,
+                        multiproc=True,
+                        cpus=4,
+                        group_name=None,
+                        retain_pixel_data=False,
+                        db_manager=None):
         files = self._get_all_files(directory_path)
         batches = self._batch(files, cpus)
-        all_data = []
+        all_records = []
 
         if multiproc:
             with futures.ProcessPoolExecutor(max_workers=cpus) as executor:
-                futures_list = [executor.submit(self._index_batch, batch, self.retain_pixel_data) for batch in batches]
-                for future in tqdm(futures.as_completed(futures_list), total=len(futures_list), desc="Indexing DICOM files"):
-                    all_data.extend(future.result())
+                futures_list = [
+                    executor.submit(self._index_batch, batch, retain_pixel_data, group_name)
+                    for batch in batches
+                ]
+                for future in tqdm(futures.as_completed(futures_list), total=len(futures_list), desc="Indexing DICOM file batches"):
+                    all_records.extend(future.result())
         else:
-            for batch in tqdm(batches, desc="Indexing DICOM files"):
-                all_data.extend(self._index_batch(batch, self.retain_pixel_data))
+            for batch in tqdm(batches, desc="Indexing DICOM file batches"):
+                all_records.extend(self._index_batch(batch, retain_pixel_data, group_name))
 
-        df = pd.DataFrame(all_data)
+        df = pd.DataFrame(all_records)
 
-        if output:
-            self._write_to_sqlite(df, output, table_name)
-            return None
+        if db_manager:
+            db_manager.create_table_from_model(DicomIndex)
+            self._write_to_db(df, DicomIndex, db_manager, group_name)
+
         return df
 
-    # Index a batch of files; extract fields and hash metadata
-    def _index_batch(self, file_paths, retain_pixel=False):
+    def _index_batch(self, file_paths, retain_pixels, group_name):
         results = []
-
         for path in file_paths:
             try:
                 dcm_file = DicomFile()
-                dcm_file.from_dicom_path(path, retain_pixel_data=retain_pixel)
-
-                if not dcm_file.exists:
-                    continue
-
-                pixel_digest = None
-                pixel_size = None
-
-                if retain_pixel and dcm_file.pixel_data:
-                    pixel_size, pixel_digest = hash_data(dcm_file.pixel_data)
-
-                result = {
-                    "FilePath": path,
-                    "SOPClassUID": getattr(dcm_file.header, "SOPClassUID", None),
-                    "Modality": getattr(dcm_file.header, "Modality", None),
-                    "PatientID": getattr(dcm_file.header, "PatientID", None),
-                    "StudyInstanceUID": getattr(dcm_file.header, "StudyInstanceUID", None),
-                    "SeriesInstanceUID": getattr(dcm_file.header, "SeriesInstanceUID", None),
-                    "SOPInstanceUID": getattr(dcm_file.header, "SOPInstanceUID", None),
-                    "InstanceNumber": getattr(dcm_file.header, "InstanceNumber", None),
-                    "BodyPartExamined": getattr(dcm_file.header, "BodyPartExamined", None),
-                    "Manufacturer": getattr(dcm_file.header, "Manufacturer", None),
-                    "ManufacturerModelName": getattr(dcm_file.header, "ManufacturerModelName", None),
-                    "HeaderData": dcm_file.header.to_json(),
-                    "MetaData": dcm_file.meta.to_json(),
-                    "PixelDigest": pixel_digest,
-                    "PixelSize": pixel_size
-                }
-
-                header_size, header_digest = hash_data(result["HeaderData"])
-                meta_size, meta_digest = hash_data(result["MetaData"])
-
-                result.update({
-                    "HeaderDigest": header_digest,
-                    "HeaderSize": header_size,
-                    "MetaDigest": meta_digest,
-                    "MetaSize": meta_size
-                })
-
-                results.append(result)
-
+                dcm_file.from_dicom_path(path, retain_pixel_data=retain_pixels)
+                if dcm_file.exists:
+                    results.append(dcm_file.to_index_row(group_name=group_name))
             except InvalidDicomError:
                 continue
             except Exception as e:
-                logging.error(f"Error reading {path}: {e}")
-
+                logger.error(f"Error reading {path}: {e}")
         return results
 
-    # Return all file paths under a directory (recursive)
+    def _write_to_db(self, df, orm_model, db_manager, group_name=None):
+        records = df.to_dict(orient="records")
+        try:
+            deleted = 0
+            if group_name:
+                deleted = db_manager.session.query(orm_model)\
+                    .filter(orm_model.group_name == group_name)\
+                    .delete(synchronize_session=False)
+                db_manager.session.commit()
+                logger.info(f"Deleted {deleted} existing records.")
+
+            db_manager.session.bulk_insert_mappings(orm_model, records)
+            db_manager.session.commit()
+            logger.info(f"Wrote {len(df)} records to '{orm_model.__tablename__}'.")
+        except Exception as e:
+            db_manager.session.rollback()
+            logger.error(f"Failed to write to ORM table: {e}")
+            raise
+
     def _get_all_files(self, directory_path):
         return [f for f in glob(os.path.join(directory_path, "**", "*"), recursive=True) if os.path.isfile(f)]
 
-    # Split a list of files into batches based on CPU count
     def _batch(self, files, cpus):
         batch_size = max(1, min(100, math.ceil(len(files) / cpus)))
         return [files[i:i + batch_size] for i in range(0, len(files), batch_size)]
-
-    # Write a DataFrame to a SQLite table
-    def _write_to_sqlite(self, df, db_path, table_name):
-        conn = sql.connect(db_path)
-        df.to_sql(table_name, conn, if_exists="replace", index=False)
-        conn.close()

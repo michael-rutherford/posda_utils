@@ -15,7 +15,8 @@ setup(
         "pandas==2.2.3",
         "requests==2.32.3",
         "sqlalchemy==2.0.41",
-        "psycopg2-binary==2.9.10"
+        "psycopg2-binary==2.9.10",
+        "pymysql==1.1.1"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

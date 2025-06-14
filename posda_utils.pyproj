@@ -25,8 +25,11 @@
   <ItemGroup>
     <Compile Include="posda_utils\compare\directory_compare.py" />
     <Compile Include="posda_utils\compare\file_compare.py" />
+    <Compile Include="posda_utils\compare\tag_matrix.py" />
     <Compile Include="posda_utils\compare\__init__.py" />
+    <Compile Include="posda_utils\db\database.py" />
     <Compile Include="posda_utils\db\data_helper.py" />
+    <Compile Include="posda_utils\db\models.py" />
     <Compile Include="posda_utils\db\__init__.py" />
     <Compile Include="posda_utils\io\hasher.py" />
     <Compile Include="posda_utils\io\indexer.py" />

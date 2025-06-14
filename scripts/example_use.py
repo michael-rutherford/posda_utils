@@ -1,12 +1,20 @@
+import os
 import json
+import sqlite3 as sql
+import logging
 
 from posda_utils.io.reader import DicomFile
 from posda_utils.io.hasher import hash_file, hash_uid, hash_uid_list
-from posda_utils.io.indexer import DirectoryIndexer
+from posda_utils.io.indexer import DicomIndexer
 from posda_utils.compare.file_compare import DicomFileComparer
+from posda_utils.compare.tag_matrix import TagMatrixBuilder
 
 from posda_utils.posda.api import PosdaAPI
 from posda_utils.posda.db import PosdaDB
+
+from posda_utils.db.database import DBManager
+from posda_utils.db.models import Base, DicomIndex
+
 
 config_file = r'D:\Cloud\University of Arkansas for Medical Sciences\Work - General\PW\posda_pw.json'
 with open(config_file) as f:
@@ -24,32 +32,49 @@ series_uid = '2.25.45367868844278747809947145409050295798'
 dcm_file_id = 85550324
 nifti_file_id = 155149761
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
+
+logger = logging.getLogger(__name__)
+
+def write_to_sqlite(df, db_path, table_name):
+    conn = sql.connect(db_path)
+    df.to_sql(table_name, conn, if_exists="replace", index=False)
+    conn.close()
 
 def example_read_dicom():
     dcm = DicomFile()
     dcm.from_dicom_path(dcm_file_path_1)
 
-    print("Meta tags:", list(dcm.meta_dict.keys())[:5])
-    print("Header tags:", list(dcm.header_dict.keys())[:5])
+    logger.info("Meta tags:", list(dcm.meta_dict.keys())[:5])
+    logger.info("Header tags:", list(dcm.header_dict.keys())[:5])
 
 def example_hashing():
-    print("File hash:", hash_file(dcm_file_path_1))
+    logger.info("File hash:", hash_file(dcm_file_path_1))
 
-    print("Single UID hash:", hash_uid("1.2.3.4.5"))
+    logger.info("Single UID hash:", hash_uid("1.2.3.4.5"))
 
     uids = ["1.2.3.4", "1.2.840.113619"]
-    print("Batch UID hash:", hash_uid_list(uids))
+    logger.info("Batch UID hash:", hash_uid_list(uids))
 
 def example_index_directory():
-    indexer = DirectoryIndexer(retain_pixel_data=True)
-    #df = indexer.index_directory(dcm_path, multiproc=True, cpus=8)
-    indexer.index_directory(
-        dcm_path,
-        multiproc=True,
-        cpus=8,
-        output=r"C:\data\test\dcm_index_test.db",
-        table_name="dcm_index_test"
-    )
+    
+    db_path=r"C:\data\test\dcm_index_test.db"
+    conn_string = f"sqlite:///{db_path}"
+    
+    with DBManager(conn_string, echo=False) as db:
+        
+        indexer = DicomIndexer()
+    
+        df = indexer.index_directory(
+            directory_path=dcm_path,
+            multiproc=True,
+            cpus=8,
+            group_name="dcm_index_test",
+            retain_pixel_data=False,
+            db_manager=db)
 
 def example_file_compare():
     d1 = DicomFile()
@@ -84,7 +109,7 @@ def example_file_compare():
     # Print sample differences
     for row in results:
         if row["different"]:
-            print(f"{row['tag']}: {row[f'{d1_label}_value']} != {row[f'{d2_label}_value']}")
+            logger.info(f"{row['tag']}: {row[f'{d1_label}_value']} != {row[f'{d2_label}_value']}")
 
 def example_posda_api():
     api_host = config_data['tcia']['api_host']
@@ -135,7 +160,7 @@ def example_posda_db():
         "port": config_data['tcia']['port']
     }
 
-    with PosdaDB(conn_data, db="posda_files") as db:
+    with PosdaDB(conn_data, db_name="posda_files") as db:
 
         # # Insert
         # insert_sql = """
@@ -167,14 +192,16 @@ def example_posda_db():
     
         # Function
         timepoint_list = db.get_timepoint_files(3792)
+        a='a'
+
 
 
 if __name__ == "__main__":
     #example_read_dicom()
     #example_hashing()
-    #example_index_directory()
+    example_index_directory()
     #example_file_compare()
-    example_posda_api()
+    #example_posda_api()
     #example_posda_db()
 
 
