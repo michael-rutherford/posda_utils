@@ -46,9 +46,9 @@ class DBManager:
             except SQLAlchemyError as e:
                 logger.error(f"Failed to create table '{table_name}': {e}")
 
-    def run_query(self, query_text, df=False):
+    def run_query(self, query_text, df=False, params=None):
         try:
-            result = self.session.execute(text(query_text))
+            result = self.session.execute(text(query_text), params or {})
             rows = result.fetchall()
             if df:
                 return pd.DataFrame(rows, columns=result.keys())

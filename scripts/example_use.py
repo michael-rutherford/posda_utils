@@ -6,6 +6,7 @@ import logging
 from posda_utils.io.reader import DicomFile
 from posda_utils.io.hasher import hash_file, hash_uid, hash_uid_list
 from posda_utils.io.indexer import DicomIndexer
+
 from posda_utils.compare.file_compare import DicomFileComparer
 from posda_utils.compare.tag_matrix import TagMatrixBuilder
 
@@ -64,17 +65,21 @@ def example_index_directory():
     db_path=r"C:\data\test\dcm_index_test.db"
     conn_string = f"sqlite:///{db_path}"
     
+    directories = ['dcm_index_test_01',
+                   'dcm_index_test_02']
+
     with DBManager(conn_string, echo=False) as db:
         
         indexer = DicomIndexer()
-    
-        df = indexer.index_directory(
-            directory_path=dcm_path,
-            multiproc=True,
-            cpus=8,
-            group_name="dcm_index_test",
-            retain_pixel_data=False,
-            db_manager=db)
+        
+        for directory in directories:    
+            df = indexer.index_directory(
+                directory_path=dcm_path,
+                multiproc=True,
+                cpus=8,
+                group_name=directory,
+                retain_pixel_data=False,
+                db_manager=db)
 
 def example_file_compare():
     d1 = DicomFile()
@@ -194,15 +199,25 @@ def example_posda_db():
         timepoint_list = db.get_timepoint_files(3792)
         a='a'
 
+def example_tag_matrix():
+    
+    db_path=r"C:\data\test\dcm_index_test.db"
+    conn_string = f"sqlite:///{db_path}"    
+    groups = ['dcm_index_test_01','dcm_index_test_02']
 
+    with DBManager(conn_string, echo=False) as db:
+        builder = TagMatrixBuilder(db, groups)
+        df = builder.build_matrix(cpus=20, batch_size=100)
+        
 
 if __name__ == "__main__":
     #example_read_dicom()
     #example_hashing()
-    example_index_directory()
+    #example_index_directory()
     #example_file_compare()
     #example_posda_api()
     #example_posda_db()
+    example_tag_matrix()
 
 
 
