@@ -51,15 +51,16 @@ def process_batch(ref_uids, label_to_rows):
                 row[f"{label}_value"] = None
 
             for label, tag_dict in tag_data.items():
-                value = tag_dict.get(tag, {}).get("value")
+                tag_info = tag_dict.get(tag, {})
+                value = '<REMOVED>' if tag_info.get("element", {}).VR == "SQ" else tag_info.get("value")
                 row[f"{label}_value"] = value
 
                 if row["tag"] is None:
-                    row["tag"] = tag_dict.get(tag, {}).get("label")
-                    element = tag_dict.get(tag, {}).get("element")
-                    row["tag_name"] = getattr(element, "name", None)
-                    row["tag_vm"] = getattr(element, "VM", None)
-                    row["tag_vr"] = getattr(element, "VR", None)
+                    row["tag"] = tag_info.get("label")
+                    element = tag_info.get("element")
+                    row["tag_name"] = getattr(element, "name", None) if element else None
+                    row["tag_vm"] = getattr(element, "VM", None) if element else None
+                    row["tag_vr"] = getattr(element, "VR", None) if element else None
 
             results.append(row)
 
