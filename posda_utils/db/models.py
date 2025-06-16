@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, BigInteger, Integer, String, Text
+from sqlalchemy import Column, BigInteger, Integer, String, Text, Index
 
 Base = declarative_base()
 
@@ -30,3 +30,7 @@ class DicomIndex(Base):
     pixel_data = Column(Text, nullable=True)
     pixel_digest = Column(String, nullable=True)
     pixel_size = Column(BigInteger, nullable=True)
+    
+    __table_args__ = (
+        Index("idx_dicom_group_uid", "group_name", "sop_instance_uid"),
+    )

@@ -61,9 +61,6 @@ class DicomFile:
 
             self.exists = True
             self.info = {"FilePath": dicom_path}
-            
-            if dataset.Modality == "REG":
-                a='a'
 
             if "PixelData" in dataset:
                 pixel_data = dataset.PixelData

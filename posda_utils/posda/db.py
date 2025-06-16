@@ -4,8 +4,8 @@ from posda_utils.db.database import DBManager
 
 class PosdaDB(DBManager):
     def __init__(self, conn_data, db_name, echo=False):
-        db_url = f"postgresql+psycopg2://{conn_data['un']}:{conn_data['pw']}@{conn_data['host']}:{conn_data['port']}/{db_name}"
-        super().__init__(db_url, echo=echo)
+        conn_string = f"postgresql+psycopg2://{conn_data['un']}:{conn_data['pw']}@{conn_data['host']}:{conn_data['port']}/{db_name}"
+        super().__init__(conn_string, echo=echo)
 
     def test_connection(self):
         try:

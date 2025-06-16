@@ -2,6 +2,13 @@ import os
 import json
 import sqlite3 as sql
 import logging
+from datetime import datetime
+
+import warnings
+import pydicom
+warnings.filterwarnings("ignore", module="pydicom")
+# from pydicom.errors import InvalidDicomWarning
+# warnings.filterwarnings("ignore", category=InvalidDicomWarning)
 
 from posda_utils.io.reader import DicomFile
 from posda_utils.io.hasher import hash_file, hash_uid, hash_uid_list
@@ -207,10 +214,13 @@ def example_tag_matrix():
 
     with DBManager(conn_string, echo=False) as db:
         builder = TagMatrixBuilder(db, groups)
-        df = builder.build_matrix(cpus=20, batch_size=100)
+        df = builder.build_matrix(multiproc=True, cpus=36, batch_size=100)
         
-
 if __name__ == "__main__":
+
+    start_time = datetime.now()
+    logger.info(f"Process started at {start_time}")
+
     #example_read_dicom()
     #example_hashing()
     #example_index_directory()
@@ -219,7 +229,12 @@ if __name__ == "__main__":
     #example_posda_db()
     example_tag_matrix()
 
+    end_time = datetime.now()
+    elapsed_time = end_time - start_time
+    seconds_in_day = 24 * 60 * 60
+    duration = divmod(elapsed_time.days * seconds_in_day + elapsed_time.seconds, 60)
 
+    logger.info(f'Complete - Duration: {duration}')
 
 
 
