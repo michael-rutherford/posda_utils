@@ -52,7 +52,8 @@ def process_batch(ref_uids, label_to_rows):
 
             for label, tag_dict in tag_data.items():
                 tag_info = tag_dict.get(tag, {})
-                value = '<REMOVED>' if tag_info.get("element", {}).VR == "SQ" else tag_info.get("value")
+                element = tag_info.get("element", None)
+                value = "<REMOVED>" if element and hasattr(element, "VR") and getattr(element, "VR", None) == "SQ" else tag_info.get("value")
                 row[f"{label}_value"] = value
 
                 if row["tag"] is None:
