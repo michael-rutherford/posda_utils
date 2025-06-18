@@ -23,14 +23,14 @@ def hash_data(data):
     return len(data), data_hash.hexdigest()
 
 
-def hash_uid(uid, uid_root = "1.3.6.1.4.1.14519.5.2.1", trunc = 64):
+def hash_uid(uid, uid_root = "1.3.6.1.4.1.14519.5.2.1", trunc = 64, override=False):
     """Generate a hashed UID using MD5 digest."""
-    if uid.startswith(uid_root):
+    if uid.startswith(uid_root) and not override:
         return uid
     md5 = hashlib.md5(uid.encode())
     return f"{uid_root}.{int(md5.hexdigest(), 16)}"[:trunc]
 
 
-def hash_uid_list(uid_list, uid_root = "1.3.6.1.4.1.14519.5.2.1", trunc = 64):
+def hash_uid_list(uid_list, uid_root = "1.3.6.1.4.1.14519.5.2.1", trunc = 64, override=False):
     """Hash a list of UIDs using hash_uid()."""
-    return [(uid, hash_uid(uid, uid_root, trunc)) for uid in uid_list]
+    return [(uid, hash_uid(uid, uid_root, trunc, override)) for uid in uid_list]
