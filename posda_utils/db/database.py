@@ -6,6 +6,8 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
+import io
+import psycopg2
 from posda_utils.db.models import Base
 
 # SQLite        sqlite:///path/to/file.db
@@ -104,3 +106,42 @@ class DBManager:
                 session.execute(text(query))
             except SQLAlchemyError as e:
                 logger.error(f"Truncate failed: {e}. Query: {query}")
+
+    def bulk_insert(self, df, table, schema="public", if_exists="append", index=False):
+        if df.empty:
+            return
+
+        try:
+            df.to_sql(
+                name=table,
+                con=self.engine,
+                schema=schema,
+                if_exists=if_exists,
+                index=index,
+                method="multi"
+            )
+        except Exception as e:
+            logger.error(f"Bulk insert failed: {e}")
+            raise
+
+    # PostgreSQL ONLY - COPY method for bulk insert
+    def copy_from_df(self, df, table, schema="public"):
+        if df.empty:
+            return
+
+        # Create a CSV buffer (PostgreSQL COPY format)
+        buffer = io.StringIO()
+        df.to_csv(buffer, index=False, header=False)
+        buffer.seek(0)
+
+        full_table_name = f"{schema}.{table}"
+
+        with self.engine.raw_connection() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.copy_expert(f"COPY {full_table_name} FROM STDIN WITH CSV", buffer)
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    logger.error(f"COPY insert failed: {e}")
+                    raise
