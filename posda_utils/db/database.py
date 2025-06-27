@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 import io
 import psycopg2
+from psycopg2.extras import execute_values
 from posda_utils.db.models import Base
 
 # SQLite        sqlite:///path/to/file.db
@@ -145,3 +146,40 @@ class DBManager:
                     conn.rollback()
                     logger.error(f"COPY insert failed: {e}")
                     raise
+
+    # PostgreSQL ONLY - Bulk update using UPDATE ... FROM (VALUES ...)
+    def bulk_update(self, rows, target_table, key_column, update_columns, schema="public", batch_size=1000):
+        """
+        Perform bulk UPDATE using PostgreSQL's UPDATE ... FROM (VALUES ...) syntax.
+
+        :param rows: List of tuples like [(key, col1, col2, ...), ...]
+        :param target_table: Table to update.
+        :param key_column: Column used for matching (e.g. 'origin_file_id').
+        :param update_columns: List of columns to update (e.g. ['modality', 'series']).
+        :param schema: Schema name.
+        :param batch_size: How many rows to process at once.
+        """
+
+        if not rows:
+            return
+
+        total_cols = [key_column] + update_columns
+        col_placeholders = ', '.join(total_cols)
+        set_clause = ', '.join([f"{col} = v.{col}" for col in update_columns])
+        full_table_name = f"{schema}.{target_table}"
+
+        with self.engine.begin() as connection:
+            raw_conn = connection.connection
+            with raw_conn.cursor() as cur:
+                for i in range(0, len(rows), batch_size):
+                    batch = rows[i:i + batch_size]
+                    execute_values(
+                        cur,
+                        f"""
+                        UPDATE {full_table_name} AS t
+                        SET {set_clause}
+                        FROM (VALUES %s) AS v({col_placeholders})
+                        WHERE t.{key_column} = v.{key_column}
+                        """,
+                        batch
+                    )
