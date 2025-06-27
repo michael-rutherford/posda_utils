@@ -21,7 +21,8 @@ from posda_utils.posda.api import PosdaAPI
 from posda_utils.posda.db import PosdaDB
 
 from posda_utils.db.database import DBManager
-from posda_utils.db.models import Base, DicomIndex
+from posda_utils.db.models import Base, DicomIndex, DicomCompare
+from sqlalchemy.orm import Session
 
 
 config_file = r'D:\Cloud\University of Arkansas for Medical Sciences\Work - General\PW\posda_pw.json'
@@ -216,6 +217,50 @@ def example_tag_matrix():
         builder = TagMatrixBuilder(db, groups)
         df = builder.build_matrix(multiproc=True, cpus=36, batch_size=100)
         
+def example_compare_posda_files():    
+    file_id_1 = 4352452
+    file_id_2 = 6548052
+    
+    api_host = config_data['tcia']['api_host']
+    api_auth = config_data['tcia']['api_auth']
+
+    conn_data = {
+        "un": config_data['tcia']['un'],
+        "pw": config_data['tcia']['pw'],
+        "host": config_data['tcia']['host'],
+        "port": config_data['tcia']['port']
+    }
+
+    with PosdaAPI(api_host, api_auth) as api, PosdaDB(conn_data, db_name="bb_temp") as db:
+        file_data_1 = api.get_file_data(file_id_1)
+        file_data_2 = api.get_file_data(file_id_2)
+
+        if not file_data_1 or not file_data_2:
+            logger.error("Failed to retrieve one or both DICOM files.")
+            return
+
+        d1 = DicomFile()
+        d2 = DicomFile()
+        d1.from_dicom_bytes(file_data_1)
+        d2.from_dicom_bytes(file_data_2)
+
+        base_record = {
+            "origin_path": f"posda:{file_id_1}",
+            "terminal_path": f"posda:{file_id_2}",
+            "origin_instance": getattr(d1.header_data, "SOPInstanceUID", None),
+            "terminal_instance": getattr(d2.header_data, "SOPInstanceUID", None),
+        }
+
+        comparer = DicomFileComparer()
+        results = comparer.compare(base_record, d1, "origin", d2, "terminal")
+
+        db.create_table_from_model(DicomCompare)
+        db.truncate_table(DicomCompare.__tablename__)
+        db.insert_dicom_comparison(file_id_1, file_id_2, results, "origin", "terminal")
+
+
+
+
 if __name__ == "__main__":
 
     start_time = datetime.now()
@@ -227,7 +272,8 @@ if __name__ == "__main__":
     #example_file_compare()
     #example_posda_api()
     #example_posda_db()
-    example_tag_matrix()
+    #example_tag_matrix()
+    example_compare_posda_files()
 
     end_time = datetime.now()
     elapsed_time = end_time - start_time

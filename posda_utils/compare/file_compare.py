@@ -56,8 +56,8 @@ class DicomFileComparer:
                         "private_creator": None
                     })
 
-            row[f"{dicom_01_label}_value"] = tag_01.get("value")
-            row[f"{dicom_02_label}_value"] = tag_02.get("value")
+            row[f"{dicom_01_label}_value"] = tag_01.get("value") if not row["tag_vr"] == "SQ" else "<REMOVED>"
+            row[f"{dicom_02_label}_value"] = tag_02.get("value") if not row["tag_vr"] == "SQ" else "<REMOVED>"
             row["different"] = tag_01.get("value") != tag_02.get("value")
 
             comparison.append(row)
