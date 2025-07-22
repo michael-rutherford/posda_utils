@@ -218,8 +218,11 @@ def example_tag_matrix():
         df = builder.build_matrix(multiproc=True, cpus=36, batch_size=100)
         
 def example_compare_posda_files():    
-    file_id_1 = 4352452
-    file_id_2 = 6548052
+    # file_id_1 = 4352452
+    # file_id_2 = 6548052
+
+    file_id_1 = 13061912
+    file_id_2 = 38249376
     
     api_host = config_data['tcia']['api_host']
     api_auth = config_data['tcia']['api_auth']
@@ -231,7 +234,7 @@ def example_compare_posda_files():
         "port": config_data['tcia']['port']
     }
 
-    with PosdaAPI(api_host, api_auth) as api, PosdaDB(conn_data, db_name="bb_temp") as db:
+    with PosdaAPI(api_host, api_auth) as api, PosdaDB(conn_data, db_name="temp") as db:
         file_data_1 = api.get_file_data(file_id_1)
         file_data_2 = api.get_file_data(file_id_2)
 
