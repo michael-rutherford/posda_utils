@@ -137,15 +137,20 @@ class DBManager:
 
         full_table_name = f"{schema}.{table}"
 
-        with self.engine.raw_connection() as conn:
-            with conn.cursor() as cursor:
-                try:
-                    cursor.copy_expert(f"COPY {full_table_name} FROM STDIN WITH CSV", buffer)
-                    conn.commit()
-                except Exception as e:
-                    conn.rollback()
-                    logger.error(f"COPY insert failed: {e}")
-                    raise
+        conn = self.engine.raw_connection()
+        try:
+            cursor = conn.cursor()
+            try:
+                cursor.copy_expert(f"COPY {full_table_name} FROM STDIN WITH CSV", buffer)
+                conn.commit()
+            finally:
+                cursor.close()
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"COPY insert failed: {e}")
+            raise
+        finally:
+            conn.close()                
 
     # PostgreSQL ONLY - Bulk update using UPDATE ... FROM (VALUES ...)
     def bulk_update(self, rows, target_table, key_column, update_columns, schema="public", batch_size=1000):
