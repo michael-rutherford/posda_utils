@@ -188,16 +188,16 @@ def example_posda_db():
         # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
         # print(data_dict)
 
-        # # Update
-        # update_sql = """
-        #     UPDATE public.michael_test 
-        #     SET a = :a, b = :b, c = :c 
-        #     WHERE id = :id
-        # """
-        # db.run_write(update_sql, 
-        #     [{"id": 1, "a": "see", "b": 10, "c": False},
-        #      {"id": 2, "a": "you", "b": 9, "c": True},
-        #      {"id": 3, "a": "later", "b": 8, "c": False}])
+        # Update
+        update_sql = """
+            UPDATE public.michael_test 
+            SET a = :a, b = :b, c = :c 
+            WHERE id = :id
+        """
+        db.run_write(update_sql, 
+            [{"id": 1, "a": "see", "b": 10, "c": False},
+             {"id": 2, "a": "you", "b": 9, "c": True},
+             {"id": 3, "a": "later", "b": 8, "c": False}])
 
         # # Query
         # data_dict = db.run_query("SELECT * FROM public.michael_test", df=False)
@@ -221,8 +221,11 @@ def example_compare_posda_files():
     # file_id_1 = 4352452
     # file_id_2 = 6548052
 
-    file_id_1 = 13061912
-    file_id_2 = 38249376
+    # file_id_1 = 13061912
+    # file_id_2 = 38249376
+
+    file_id_1 = 96218621
+    file_id_2 = 98131289    
     
     api_host = config_data['tcia']['api_host']
     api_auth = config_data['tcia']['api_auth']
