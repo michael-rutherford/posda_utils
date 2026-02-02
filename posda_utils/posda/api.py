@@ -44,7 +44,7 @@ class PosdaAPI:
     def query_posda_api(self, endpoint):
         url = f"{self.api_url}{endpoint}"
         try:
-            resp = self.session.get(url, timeout=10)
+            resp = self.session.get(url, timeout=self.timeout)
             if resp.status_code == 200:
                 return resp, url, True
             print(f'Bad response: {resp.status_code} - {resp.text}')
