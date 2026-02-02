@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="posda_utils",
-    version="0.2.8",
+    version="0.2.9",
     description="A toolkit for medical image file processing, comparison, indexing, and Posda integration.",
     author="Michael Rutherford",
     packages=find_packages(),

@@ -88,7 +88,7 @@ class DicomFile:
     def from_dicom_path(self, dicom_path, retain_pixel_data=False):
         """Load and parse a DICOM file from disk."""
         try:
-            dataset = dcm.dcmread(dicom_path, force=False)
+            dataset = dcm.dcmread(dicom_path, force=False, stop_before_pixels=not retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"FilePath": dicom_path})
         except InvalidDicomError:
             logging.warning(f"Invalid DICOM file: {dicom_path}")
@@ -99,7 +99,7 @@ class DicomFile:
     def from_dicom_bytes(self, byte_data, retain_pixel_data=False):
         """Load and parse a DICOM file from raw bytes."""
         try:
-            dataset = dcm.dcmread(BytesIO(byte_data), force=False)
+            dataset = dcm.dcmread(BytesIO(byte_data), force=False, stop_before_pixels=not retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
         except InvalidDicomError:
             logging.warning("Invalid DICOM byte stream")
@@ -107,7 +107,7 @@ class DicomFile:
             if "could not convert string to float" in str(e):
                 try:
                     fixed = byte_data.replace(b",", b".")
-                    dataset = dcm.dcmread(BytesIO(fixed), force=False)
+                    dataset = dcm.dcmread(BytesIO(fixed), force=False, stop_before_pixels=not retain_pixel_data)
                     self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
                     return
                 except Exception as e2:
