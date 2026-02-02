@@ -31,6 +31,35 @@ class DicomFile:
         self.header_size = 0
         self.header_dict = {}
 
+    def _load_dataset(self, dataset, retain_pixel_data=False, info=None):
+        self.exists = True
+        self.info = info
+
+        if "PixelData" in dataset:
+            pixel_data = dataset.PixelData
+            if isinstance(pixel_data, (bytes, bytearray, memoryview)):
+                self.pixel_size, self.pixel_digest = hash_data(pixel_data)
+                if retain_pixel_data:
+                    self.pixel_data = base64.b64encode(pixel_data).decode("utf-8")
+            else:
+                logging.warning("Unsupported PixelData type")
+                self.pixel_size = self.pixel_digest = self.pixel_data = None
+
+        self.meta_data = dataset.file_meta
+        self.meta_json = self.meta_data.to_json()
+        self.meta_size, self.meta_digest = hash_data(self.meta_json)
+        self.meta_dict = self._index_elements(self.meta_data)
+
+        self.header_data = dataset.copy()
+        if "PixelData" in self.header_data:
+            del self.header_data.PixelData
+        if hasattr(self.header_data, "file_meta"):
+            del self.header_data.file_meta
+        self.header_json = self.header_data.to_json()
+        self.header_size, self.header_digest = hash_data(self.header_json)
+        self.header_dict = self._index_elements(self.header_data)
+
+
     def from_json(self, meta_json, header_json, pixel_data, info=None):
         """Load DICOM file from JSON representations of meta and header."""
         self.exists = True
@@ -55,79 +84,36 @@ class DicomFile:
                 logging.warning(f"Could not decode pixel data from JSON: {e}")
                 self.pixel_size, self.pixel_digest = None, None
 
+
     def from_dicom_path(self, dicom_path, retain_pixel_data=False):
         """Load and parse a DICOM file from disk."""
         try:
             dataset = dcm.dcmread(dicom_path, force=False)
-
-            self.exists = True
-            self.info = {"FilePath": dicom_path}
-
-            if "PixelData" in dataset:
-                pixel_data = dataset.PixelData
-                if isinstance(pixel_data, (bytes, bytearray, memoryview)):
-                    self.pixel_size, self.pixel_digest = hash_data(pixel_data)
-                    if retain_pixel_data:
-                        self.pixel_data = base64.b64encode(pixel_data).decode("utf-8")
-                else:
-                    logging.warning(f"Unsupported PixelData type in {dicom_path}: {type(pixel_data)}")
-                    self.pixel_size = self.pixel_digest = self.pixel_data = None
-                
-            self.meta_data = dataset.file_meta
-            self.meta_json = self.meta_data.to_json()
-            self.meta_size, self.meta_digest = hash_data(self.meta_json)
-            self.meta_dict = self._index_elements(self.meta_data)
-            
-            self.header_data = dataset.copy()
-            if "PixelData" in self.header_data:
-                del self.header_data.PixelData
-            if hasattr(self.header_data, "file_meta"):
-                del self.header_data.file_meta
-            self.header_json = self.header_data.to_json()
-            self.header_size, self.header_digest = hash_data(self.header_json)
-            self.header_dict = self._index_elements(self.header_data)
-
+            self._load_dataset(dataset, retain_pixel_data, info={"FilePath": dicom_path})
         except InvalidDicomError:
             logging.warning(f"Invalid DICOM file: {dicom_path}")
         except Exception as e:
             logging.error(f"Failed to read DICOM file {dicom_path}: {e}")
 
+
     def from_dicom_bytes(self, byte_data, retain_pixel_data=False):
         """Load and parse a DICOM file from raw bytes."""
         try:
             dataset = dcm.dcmread(BytesIO(byte_data), force=False)
-
-            self.exists = True
-            self.info = {"Source": "memory"}
-
-            if "PixelData" in dataset:
-                pixel_data = dataset.PixelData
-                if isinstance(pixel_data, (bytes, bytearray, memoryview)):
-                    self.pixel_size, self.pixel_digest = hash_data(pixel_data)
-                    if retain_pixel_data:
-                        self.pixel_data = base64.b64encode(pixel_data).decode("utf-8")
-                else:
-                    logging.warning("Unsupported PixelData type in memory")
-                    self.pixel_size = self.pixel_digest = self.pixel_data = None
-
-            self.meta_data = dataset.file_meta
-            self.meta_json = self.meta_data.to_json()
-            self.meta_size, self.meta_digest = hash_data(self.meta_json)
-            self.meta_dict = self._index_elements(self.meta_data)
-
-            self.header_data = dataset.copy()
-            if "PixelData" in self.header_data:
-                del self.header_data.PixelData
-            if hasattr(self.header_data, "file_meta"):
-                del self.header_data.file_meta
-            self.header_json = self.header_data.to_json()
-            self.header_size, self.header_digest = hash_data(self.header_json)
-            self.header_dict = self._index_elements(self.header_data)
-
+            self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
         except InvalidDicomError:
             logging.warning("Invalid DICOM byte stream")
         except Exception as e:
+            if "could not convert string to float" in str(e):
+                try:
+                    fixed = byte_data.replace(b",", b".")
+                    dataset = dcm.dcmread(BytesIO(fixed), force=False)
+                    self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
+                    return
+                except Exception as e2:
+                    logging.error(f"Failed to read DICOM bytes after comma fix: {e2}")
             logging.error(f"Failed to read DICOM bytes: {e}")
+
 
     def to_index_row(self, group_name=None):
         return {
