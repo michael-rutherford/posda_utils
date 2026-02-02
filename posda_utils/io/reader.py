@@ -6,10 +6,10 @@ import logging
 import base64
 from io import BytesIO
 from pydicom.errors import InvalidDicomError
-from pydicom import config
 from posda_utils.io.hasher import hash_data
 
-config.settings.reading_validation_mode = "WARN"   # or "IGNORE"
+from pydicom import config
+config.settings.reading_validation_mode = "IGNORE"
 
 class DicomFile:
     def __init__(self):
