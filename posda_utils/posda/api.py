@@ -16,16 +16,20 @@ class PosdaAPI:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.session.close()
 
-    def __init__(self, api_url, auth_token):
+    def __init__(self, api_url, auth_token, pool_maxsize=1000, pool_connections=1000, retries=3):
         self.api_url = api_url.rstrip('/')
         self.headers = { 'Authorization': f'Bearer {auth_token}' }
-        
+
         self.session = requests.Session()
         self.session.headers.update(self.headers)
 
-        adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=Retry(total=3, backoff_factor=0.3))
+        adapter = HTTPAdapter(
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
+            max_retries=Retry(total=retries, backoff_factor=0.3)
+        )
         self.session.mount("http://", adapter)
-        self.session.mount("https://", adapter)
+        self.session.mount("https://", adapter)        
 
     def query_posda_api(self, endpoint):
         url = f"{self.api_url}{endpoint}"
