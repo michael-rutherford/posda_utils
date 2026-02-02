@@ -77,6 +77,35 @@ class DBManager:
     #             logger.error(f"Query failed: {e}. Query: {stmt}, Params: {params}")
     #             return None
 
+    # def run_query(self, query_text, df=False, params=None, conn=None):
+    #     stmt = text(query_text) if isinstance(query_text, str) else query_text
+    #     owns_conn = conn is None
+    #     if owns_conn:
+    #         conn = self.engine.connect()
+    #     try:
+    #         result = conn.execute(stmt, params or {})
+    #         rows = result.fetchall()
+    #         return pd.DataFrame(rows, columns=result.keys()) if df else rows
+    #     except SQLAlchemyError as e:
+    #         logger.error(f"Query failed: {e}. Query: {stmt}, Params: {params}")
+    #         return None
+    #     finally:
+    #         if owns_conn:
+    #             conn.close()
+
+    def run_query(self, query_text, df=False, params=None, conn=None):
+        stmt = text(query_text) if isinstance(query_text, str) else query_text
+        owns_conn = conn is None
+        if owns_conn:
+            with self.engine.connect() as conn:
+                result = conn.execute(stmt, params or {})
+                rows = result.fetchall()
+        else:
+            result = conn.execute(stmt, params or {})
+            rows = result.fetchall()
+        return pd.DataFrame(rows, columns=result.keys()) if df else rows                
+
+
     # def run_write(self, query_text, data_dict):
     #     stmt = text(query_text) if isinstance(query_text, str) else query_text
     #     with self._get_session() as session:
@@ -88,39 +117,36 @@ class DBManager:
     #                 self.session.rollback()
     #             logger.error(f"Write failed: {e}. Query: {stmt}, Params: {data_dict}")
 
-    def run_query(self, query_text, df=False, params=None, conn=None):
-        stmt = text(query_text) if isinstance(query_text, str) else query_text
-        owns_conn = conn is None
-        if owns_conn:
-            conn = self.engine.connect()
-        try:
-            result = conn.execute(stmt, params or {})
-            rows = result.fetchall()
-            return pd.DataFrame(rows, columns=result.keys()) if df else rows
-        except SQLAlchemyError as e:
-            logger.error(f"Query failed: {e}. Query: {stmt}, Params: {params}")
-            return None
-        finally:
-            if owns_conn:
-                conn.close()
+
+    # def run_write(self, query_text, data_dict, conn=None):
+    #     stmt = text(query_text) if isinstance(query_text, str) else query_text
+    #     owns_conn = conn is None
+    #     if owns_conn:
+    #         conn = self.engine.begin()  # transaction
+    #     try:
+    #         conn.execute(stmt, data_dict)
+    #         if owns_conn:
+    #             conn.commit()
+    #     except SQLAlchemyError as e:
+    #         if owns_conn:
+    #             conn.rollback()
+    #         logger.error(f"Write failed: {e}. Query: {stmt}, Params: {data_dict}")
+    #         raise
+    #     finally:
+    #         if owns_conn:
+    #             conn.close()                
 
     def run_write(self, query_text, data_dict, conn=None):
         stmt = text(query_text) if isinstance(query_text, str) else query_text
-        owns_conn = conn is None
-        if owns_conn:
-            conn = self.engine.begin()  # transaction
-        try:
+        if conn is not None:
             conn.execute(stmt, data_dict)
-            if owns_conn:
-                conn.commit()
+            return
+        try:
+            with self.engine.begin() as conn:
+                conn.execute(stmt, data_dict)
         except SQLAlchemyError as e:
-            if owns_conn:
-                conn.rollback()
             logger.error(f"Write failed: {e}. Query: {stmt}, Params: {data_dict}")
-            raise
-        finally:
-            if owns_conn:
-                conn.close()                
+            raise                
 
     def create_table(self, table_name, columns, schema="public"):
         if not columns:
@@ -159,12 +185,42 @@ class DBManager:
             logger.error(f"Bulk insert failed: {e}")
             raise
 
+    # # PostgreSQL ONLY - COPY method for bulk insert
+    # def copy_from_df(self, df, table, schema="public", conn=None):
+    #     if df.empty:
+    #         return
+
+    #     # Create a CSV buffer (PostgreSQL COPY format)
+    #     buffer = io.StringIO()
+    #     df.to_csv(buffer, index=False, header=False)
+    #     buffer.seek(0)
+
+    #     full_table_name = f"{schema}.{table}"
+
+    #     owns_conn = conn is None
+    #     if owns_conn:
+    #         conn = self.engine.raw_connection()
+    #     try:
+    #         cursor = conn.cursor()
+    #         try:
+    #             cursor.copy_expert(f"COPY {full_table_name} FROM STDIN WITH CSV", buffer)
+    #             if owns_conn:
+    #                 conn.commit()
+    #         finally:
+    #             cursor.close()
+    #     except Exception as e:
+    #         if owns_conn:
+    #             conn.rollback()
+    #         logger.error(f"COPY insert failed: {e}")
+    #         raise
+    #     finally:
+    #         if owns_conn:
+    #             conn.close()       
+
     # PostgreSQL ONLY - COPY method for bulk insert
     def copy_from_df(self, df, table, schema="public", conn=None):
         if df.empty:
             return
-
-        # Create a CSV buffer (PostgreSQL COPY format)
         buffer = io.StringIO()
         df.to_csv(buffer, index=False, header=False)
         buffer.seek(0)
@@ -174,22 +230,26 @@ class DBManager:
         owns_conn = conn is None
         if owns_conn:
             conn = self.engine.raw_connection()
+            raw_conn = conn
+        else:
+            raw_conn = conn.connection  # DBAPI connection from SQLAlchemy Connection
+
         try:
-            cursor = conn.cursor()
+            cursor = raw_conn.cursor()
             try:
                 cursor.copy_expert(f"COPY {full_table_name} FROM STDIN WITH CSV", buffer)
                 if owns_conn:
-                    conn.commit()
+                    raw_conn.commit()
             finally:
                 cursor.close()
         except Exception as e:
             if owns_conn:
-                conn.rollback()
+                raw_conn.rollback()
             logger.error(f"COPY insert failed: {e}")
             raise
         finally:
             if owns_conn:
-                conn.close()                
+                raw_conn.close()                         
 
     # PostgreSQL ONLY - Bulk update using UPDATE ... FROM (VALUES ...)
     def bulk_update(self, rows, target_table, key_column, update_columns, schema="public", batch_size=1000):
