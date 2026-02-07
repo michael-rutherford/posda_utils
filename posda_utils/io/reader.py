@@ -5,12 +5,8 @@ import chardet
 import logging
 import base64
 from io import BytesIO
-from contextlib import contextmanager
 from pydicom.errors import InvalidDicomError
 from posda_utils.io.hasher import hash_data
-
-from pydicom import config
-config.settings.reading_validation_mode = "IGNORE"
 
 class DicomFile:
     def __init__(self):
@@ -57,46 +53,15 @@ class DicomFile:
             del self.header_data.PixelData
         if hasattr(self.header_data, "file_meta"):
             del self.header_data.file_meta
-        self.header_json = self.header_data.to_json()
-        self.header_size, self.header_digest = hash_data(self.header_json)
         self.header_dict = self._index_elements(self.header_data)
-
-    def _read_dicom(self, source, retain_pixel_data=False, force=False):
-        return dcm.dcmread(source, force=force, stop_before_pixels=not retain_pixel_data)
-
-    @contextmanager
-    def _temporary_settings(self, **settings):
-        previous = {}
-        for name, value in settings.items():
-            if hasattr(config.settings, name):
-                previous[name] = getattr(config.settings, name)
-                setattr(config.settings, name, value)
         try:
-            yield
-        finally:
-            for name, value in previous.items():
-                setattr(config.settings, name, value)
-
-    def _read_dicom_with_fallback(self, source, retain_pixel_data=False):
-        try:
-            return self._read_dicom(source, retain_pixel_data, force=False)
-        except Exception as e:
-            lenient_settings = {
-                "reading_validation_mode": "IGNORE",
-                "use_private_dictionary": False,
-                "enforce_valid_values": False,
-                "invalid_values": "IGNORE",
-                "validation_mode": "IGNORE",
-                "allow_invalid_values": True,
-            }
-
-            try:
-                with self._temporary_settings(**lenient_settings):
-                    return self._read_dicom(source, retain_pixel_data, force=True)
-            except Exception:
-                pass
-
-            raise e
+            self.header_json = self.header_data.to_json()
+            self.header_size, self.header_digest = hash_data(self.header_json)
+        except Exception:
+            logging.exception("Failed to convert header dataset to JSON")
+            self.header_json = None
+            self.header_size = None
+            self.header_digest = None
 
 
     def from_json(self, meta_json, header_json, pixel_data, info=None):
@@ -127,7 +92,7 @@ class DicomFile:
     def from_dicom_path(self, dicom_path, retain_pixel_data=False):
         """Load and parse a DICOM file from disk."""
         try:
-            dataset = self._read_dicom_with_fallback(dicom_path, retain_pixel_data)
+            dataset = dcm.dcmread(dicom_path, force=False, stop_before_pixels=not retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"FilePath": dicom_path})
         except InvalidDicomError:
             logging.warning(f"Invalid DICOM file: {dicom_path}")
@@ -138,7 +103,7 @@ class DicomFile:
     def from_dicom_bytes(self, byte_data, retain_pixel_data=False):
         """Load and parse a DICOM file from raw bytes."""
         try:
-            dataset = self._read_dicom_with_fallback(BytesIO(byte_data), retain_pixel_data)
+            dataset = dcm.dcmread(BytesIO(byte_data), force=False, stop_before_pixels=not retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
         except InvalidDicomError:
             logging.warning("Invalid DICOM byte stream")
@@ -172,6 +137,7 @@ class DicomFile:
             "pixel_size": self.pixel_size,
         }
 
+
     def _index_elements(self, dataset, elements=None, depth=0, count=0, label=None):
         if elements is None:
             elements = {}
@@ -179,38 +145,62 @@ class DicomFile:
         ignore_values = {'Pixel Data', 'Overlay Data', 'File Meta Information Version'}
 
         for element in dataset:
-            tag_str = str(element.tag).replace(', ', ',')
+            try:
+                tag_str = str(element.tag).replace(', ', ',')
 
-            if element.is_private and element.private_creator:
-                part_01 = tag_str[1:5]
-                part_02 = tag_str[6:8]
-                part_03 = tag_str[8:10]
-                tag_str = f'({part_01},"{element.private_creator}",{part_03})'
+                if element.is_private and element.private_creator:
+                    part_01 = tag_str[1:5]
+                    part_02 = tag_str[6:8]
+                    part_03 = tag_str[8:10]
+                    tag_str = f'({part_01},"{element.private_creator}",{part_03})'
 
-            append = f'[<{str(count).zfill(4)}>]' if count else '[<0000>]'
-            
-            tag_path = f'<{tag_str}>' if depth == 0 else f'{label}{append}<{tag_str}>'
+                # append = f'[<{str(count).zfill(4)}>]' if count else '[<0000>]'                
+                # tag_path = f'<{tag_str}>' if depth == 0 else f'{label}{append}<{tag_str}>'
+                tag_path = f'<{tag_str}>' if depth == 0 else f'{label}<{tag_str}>'                
 
-            element_info = {
-                'label': f'<{tag_str}>',
-                'vr': element.VR,
-                'vm': element.VM,
-                'value': self._safe_value(element.name, element.value, ignore_values),
-                'element': element
-            }
+                element_info = {
+                    'label': f'<{tag_str}>',
+                    'vr': element.VR,
+                    'vm': element.VM,
+                    'value': self._safe_value(element.name, element.value, ignore_values),
+                    'element': element
+                }
 
-            elements[tag_path] = element_info
+                elements[tag_path] = element_info
 
-            if element.VR == 'SQ':
-                for i, item in enumerate(element.value or []):
-                    self._index_elements(item, elements, depth + 1, i, tag_path)
+                if element.VR == 'SQ':
+                    for i, item in enumerate(element.value or []):
+                        # self._index_elements(item, elements, depth + 1, i, tag_path)
+                        seq_label = f'{tag_path}[{i}]'
+                        self._index_elements(item, elements, depth + 1, i, seq_label)            
+
+            except Exception as e:
+                tag_display = None
+                try:
+                    tag_display = str(element.tag).replace(', ', ',')
+                except Exception:
+                    tag_display = '<unknown>'
+                logging.exception(
+                    "Failed to index DICOM element",
+                    extra={
+                        "tag": tag_display,
+                        "name": getattr(element, "name", None),
+                        "vr": getattr(element, "VR", None),
+                        "path": tag_path if 'tag_path' in locals() else None,
+                        "depth": depth,
+                        "count": count,
+                    },
+                )
+                continue
 
         return elements
+
 
     def _safe_value(self, name, value, ignore_values):
         if name in ignore_values:
             return '<REMOVED>' if value else '<>'
         return f'<{str(self._convert_bytes(value)).strip()}>' if value is not None else '<>'
+
 
     def _convert_bytes(self, value):
         if not isinstance(value, bytes):

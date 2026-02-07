@@ -261,7 +261,30 @@ def example_compare_posda_files():
         db.truncate_table(DicomCompare.__tablename__)
         db.insert_dicom_comparison(file_id_1, file_id_2, results, "origin", "terminal")
 
+def example_retrieve_and_read():    
+    file_id = 205380979
+    
+    api_host = config_data['tcia']['api_host']
+    api_auth = config_data['tcia']['api_auth']
 
+    conn_data = {
+        "un": config_data['tcia']['un'],
+        "pw": config_data['tcia']['pw'],
+        "host": config_data['tcia']['host'],
+        "port": config_data['tcia']['port']
+    }
+
+    with PosdaAPI(api_host, api_auth) as api, PosdaDB(conn_data, db_name="temp") as db:
+        file_data = api.get_file_data(file_id)
+
+        if not file_data:
+            logger.error("Failed to retrieve the DICOM file.")
+            return
+
+        d = DicomFile()
+        d.from_dicom_bytes(file_data)
+
+        a='a'
 
 
 if __name__ == "__main__":
@@ -276,7 +299,8 @@ if __name__ == "__main__":
     #example_posda_api()
     #example_posda_db()
     #example_tag_matrix()
-    example_compare_posda_files()
+    # example_compare_posda_files()
+    example_retrieve_and_read()
 
     end_time = datetime.now()
     elapsed_time = end_time - start_time
