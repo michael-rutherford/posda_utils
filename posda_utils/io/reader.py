@@ -5,6 +5,7 @@ import chardet
 import logging
 import base64
 from io import BytesIO
+from contextlib import contextmanager
 from pydicom.errors import InvalidDicomError
 from posda_utils.io.hasher import hash_data
 
@@ -60,6 +61,66 @@ class DicomFile:
         self.header_size, self.header_digest = hash_data(self.header_json)
         self.header_dict = self._index_elements(self.header_data)
 
+    def _read_dicom(self, source, retain_pixel_data=False, force=False):
+        return dcm.dcmread(source, force=force, stop_before_pixels=not retain_pixel_data)
+
+    @contextmanager
+    def _temporary_settings(self, **settings):
+        previous = {}
+        for name, value in settings.items():
+            if hasattr(config.settings, name):
+                previous[name] = getattr(config.settings, name)
+                setattr(config.settings, name, value)
+        try:
+            yield
+        finally:
+            for name, value in previous.items():
+                setattr(config.settings, name, value)
+
+    def _read_dicom_with_fallback(self, source, retain_pixel_data=False):
+        try:
+            return self._read_dicom(source, retain_pixel_data, force=False)
+        except Exception as e:
+            message = str(e)
+
+            conversion_errors = (
+                "could not convert string to float" in message
+                or "invalid literal for int()" in message
+            )
+
+            attempts = []
+            if conversion_errors:
+                attempts.append(
+                    (source, True, {"reading_validation_mode": "IGNORE", "use_private_dictionary": False})
+                )
+
+                raw_bytes = None
+                try:
+                    if isinstance(source, (bytes, bytearray, memoryview)):
+                        raw_bytes = bytes(source)
+                    elif isinstance(source, BytesIO):
+                        raw_bytes = source.getvalue()
+                    elif isinstance(source, str):
+                        with open(source, "rb") as handle:
+                            raw_bytes = handle.read()
+                except Exception:
+                    raw_bytes = None
+
+                if raw_bytes:
+                    fixed = raw_bytes.replace(b",", b".")
+                    attempts.append((BytesIO(fixed), False, None))
+
+            for attempt_source, force, settings in attempts:
+                try:
+                    if settings:
+                        with self._temporary_settings(**settings):
+                            return self._read_dicom(attempt_source, retain_pixel_data, force=force)
+                    return self._read_dicom(attempt_source, retain_pixel_data, force=force)
+                except Exception:
+                    continue
+
+            raise e
+
 
     def from_json(self, meta_json, header_json, pixel_data, info=None):
         """Load DICOM file from JSON representations of meta and header."""
@@ -89,7 +150,7 @@ class DicomFile:
     def from_dicom_path(self, dicom_path, retain_pixel_data=False):
         """Load and parse a DICOM file from disk."""
         try:
-            dataset = dcm.dcmread(dicom_path, force=False, stop_before_pixels=not retain_pixel_data)
+            dataset = self._read_dicom_with_fallback(dicom_path, retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"FilePath": dicom_path})
         except InvalidDicomError:
             logging.warning(f"Invalid DICOM file: {dicom_path}")
@@ -100,19 +161,11 @@ class DicomFile:
     def from_dicom_bytes(self, byte_data, retain_pixel_data=False):
         """Load and parse a DICOM file from raw bytes."""
         try:
-            dataset = dcm.dcmread(BytesIO(byte_data), force=False, stop_before_pixels=not retain_pixel_data)
+            dataset = self._read_dicom_with_fallback(BytesIO(byte_data), retain_pixel_data)
             self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
         except InvalidDicomError:
             logging.warning("Invalid DICOM byte stream")
         except Exception as e:
-            if "could not convert string to float" in str(e):
-                try:
-                    fixed = byte_data.replace(b",", b".")
-                    dataset = dcm.dcmread(BytesIO(fixed), force=False, stop_before_pixels=not retain_pixel_data)
-                    self._load_dataset(dataset, retain_pixel_data, info={"Source": "memory"})
-                    return
-                except Exception as e2:
-                    logging.error(f"Failed to read DICOM bytes after comma fix: {e2}")
             logging.error(f"Failed to read DICOM bytes: {e}")
 
 
