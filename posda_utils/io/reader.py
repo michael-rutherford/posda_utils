@@ -81,43 +81,20 @@ class DicomFile:
         try:
             return self._read_dicom(source, retain_pixel_data, force=False)
         except Exception as e:
-            message = str(e)
+            lenient_settings = {
+                "reading_validation_mode": "IGNORE",
+                "use_private_dictionary": False,
+                "enforce_valid_values": False,
+                "invalid_values": "IGNORE",
+                "validation_mode": "IGNORE",
+                "allow_invalid_values": True,
+            }
 
-            conversion_errors = (
-                "could not convert string to float" in message
-                or "invalid literal for int()" in message
-            )
-
-            attempts = []
-            if conversion_errors:
-                attempts.append(
-                    (source, True, {"reading_validation_mode": "IGNORE", "use_private_dictionary": False})
-                )
-
-                raw_bytes = None
-                try:
-                    if isinstance(source, (bytes, bytearray, memoryview)):
-                        raw_bytes = bytes(source)
-                    elif isinstance(source, BytesIO):
-                        raw_bytes = source.getvalue()
-                    elif isinstance(source, str):
-                        with open(source, "rb") as handle:
-                            raw_bytes = handle.read()
-                except Exception:
-                    raw_bytes = None
-
-                if raw_bytes:
-                    fixed = raw_bytes.replace(b",", b".")
-                    attempts.append((BytesIO(fixed), False, None))
-
-            for attempt_source, force, settings in attempts:
-                try:
-                    if settings:
-                        with self._temporary_settings(**settings):
-                            return self._read_dicom(attempt_source, retain_pixel_data, force=force)
-                    return self._read_dicom(attempt_source, retain_pixel_data, force=force)
-                except Exception:
-                    continue
+            try:
+                with self._temporary_settings(**lenient_settings):
+                    return self._read_dicom(source, retain_pixel_data, force=True)
+            except Exception:
+                pass
 
             raise e
 
